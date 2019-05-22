@@ -10,18 +10,18 @@ class item(Document):
     name = StringField(unique=True, required=True)
     className = StringField(required=True)
     params = DictField()
-    references = ListField(ReferenceField('self'))
+    references = DictField()
 
 
 class input(Document):
     timestamp = DateTimeField(required=True)
-    items = ListField(GenericReferenceField())
+    items = DictField()
 
 
 class InputMongoDB:
     def __init__(self, db, host="localhost", port=27017):
         connect(db, host=host, port=port)
-        self._items = []
+        self._items = {}
         self._classes = {}
         self._item_added_successfully = []
 
@@ -68,7 +68,7 @@ class InputMongoDB:
             except:
                 return False
 
-        self._items.append(item_)
+        self._items[name] = item_
         self._item_added_successfully[-1] = True
 
         return True
@@ -76,12 +76,13 @@ class InputMongoDB:
     def send_data(self):
         if not all(self._item_added_successfully):
             del self._item_added_successfully[:]
-            del self._items[:]
+            self._items.clear()
             raise OperationError
 
-        instances = []
+        instances = {}
 
-        for item_ in self._items:
+        for item_name in self._items.keys():
+            item_ = self._items[item_name]
             try:
                 # Get class of collection
                 class_name = item_['className']
@@ -114,7 +115,7 @@ class InputMongoDB:
 
                 collection_instance = Class(**kwargs)
                 collection_instance.save()
-                instances.append(collection_instance)
+                instances[item_name] = collection_instance
 
                 # Treat references
                 if 'references' in item_.keys():
@@ -130,14 +131,14 @@ class InputMongoDB:
 
                             if ref[0] == '+':
                                 item.objects(name=item_['name']).update(
-                                    add_to_set__references=item.objects(name=ref[1:]).first())
+                                    **{("set__references__%s" % item_['name']):item.objects(name=ref[1:]).first()})
                                 item.objects(name=ref[1:]).update(
-                                    add_to_set__references=item.objects(name=item_['name']).first())
+                                    **{("set__references__%s" % ref[1:]): item.objects(name=item_['name']).first()})
                             elif ref[0] == '-':
                                 item.objects(name=item_['name']).update(
-                                    pull__references=item.objects(name=ref[1:]).first())
+                                    **{("unset__references__%s" % item_['name']): item.objects(name=ref[1:]).first()})
                                 item.objects(name=ref[1:]).update(
-                                    pull__references=item.objects(name=item_['name']).first())
+                                    **{("unset__references__%s" % ref[1:]): item.objects(name=item_['name']).first()})
 
             except Exception:
                 raise Exception
@@ -148,7 +149,7 @@ class InputMongoDB:
             raise OperationError
         finally:
             del self._item_added_successfully[:]
-            del self._items[:]
+            self._items.clear()
 
         return True
 
