@@ -131,14 +131,14 @@ class InputMongoDB:
 
                             if ref[0] == '+':
                                 item.objects(name=item_['name']).update(
-                                    **{("set__references__%s" % item_['name']):item.objects(name=ref[1:]).first()})
+                                    **{("set__references__%s" % ref[1:]):item.objects(name=ref[1:]).first()})
                                 item.objects(name=ref[1:]).update(
-                                    **{("set__references__%s" % ref[1:]): item.objects(name=item_['name']).first()})
+                                    **{("set__references__%s" % item_['name']): item.objects(name=item_['name']).first()})
                             elif ref[0] == '-':
                                 item.objects(name=item_['name']).update(
-                                    **{("unset__references__%s" % item_['name']): item.objects(name=ref[1:]).first()})
+                                    **{("unset__references__%s" % ref[1:]): item.objects(name=ref[1:]).first()})
                                 item.objects(name=ref[1:]).update(
-                                    **{("unset__references__%s" % ref[1:]): item.objects(name=item_['name']).first()})
+                                    **{("unset__references__%s" % item_['name']): item.objects(name=item_['name']).first()})
 
             except Exception:
                 raise Exception
