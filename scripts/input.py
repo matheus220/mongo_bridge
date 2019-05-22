@@ -43,7 +43,7 @@ class InputMongoDB:
         }
 
         if data:
-            data_schema = Schema({And(str, Regex(r'^[^_].*')): object})
+            data_schema = Schema({And(str, Regex(r'^[^_^$].*')): object})
             try:
                 if data_schema.validate(data):
                     item_['data'] = data
@@ -53,7 +53,7 @@ class InputMongoDB:
                 return False
 
         if references:
-            references_schema = Schema({And(str, Regex(r'^[^_].*')): Or(Regex('^[\+,\-]'), [Regex('^[\+,\-]')])})
+            references_schema = Schema({And(str, Regex(r'^[^_^$].*')): Or(Regex('^[\+,\-]'), [Regex('^[\+,\-]')])})
             try:
                 if references_schema.validate(references):
                     item_['references'] = references
@@ -61,7 +61,7 @@ class InputMongoDB:
                 return False
 
         if params:
-            params_schema = Schema({And(str, Regex(r'^[^_].*')): object})
+            params_schema = Schema({And(str, Regex(r'^[^_^$].*')): object})
             try:
                 if params_schema.validate(params):
                     item_['params'] = params
@@ -88,7 +88,7 @@ class InputMongoDB:
                 class_name = item_['className']
                 if class_name not in self._classes.keys():
                     cls = type(class_name, (DynamicDocument,),
-                               {'name': StringField(required=True), 'name_ref': ReferenceField(item)})
+                               {'name': StringField(required=True), 'name_ref': ReferenceField(item, dbref=True)})
                     self._classes[class_name] = cls
                 Class = self._classes[class_name]
 
@@ -108,6 +108,13 @@ class InputMongoDB:
                 kwargs = {'name': item_['name'], 'name_ref': item_instance}
                 if 'data' in item_.keys():
                     kwargs['data'] = item_['data']
+                    for key in kwargs['data'].keys():
+                        if key[0] == '#' and isinstance(kwargs['data'][key], str):
+                            succeeded, server_path = self.save_file(item_['name'], kwargs['data'][key])
+                            if succeeded:
+                                kwargs['data'][key] = server_path
+                            else:
+                                raise Exception('Error in save file')
                 if 'references' in item_.keys():
                     kwargs['references'] = item_['references']
                 if 'params' in item_.keys():
@@ -152,6 +159,12 @@ class InputMongoDB:
             self._items.clear()
 
         return True
+    def save_file(self, item_name, local_path):
+        SERVER_FOLDER_PATH = '/'
+        print(local_path)
+        server_path = SERVER_FOLDER_PATH + item_name + '_' + dt.datetime.now().strftime("%Y%m%d%H%M%S%f") + '.' + local_path.split(".")[-1]
+        print(server_path)
+        return True, server_path
 
     def add_from_list(self, item_list):
 
