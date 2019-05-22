@@ -151,6 +151,17 @@ class InputMongoDB:
                 raise Exception
 
         try:
+            for name in instances.keys():
+                dict_refs = item.objects(name=name).first().references
+                instances[name].current_refs = dict_refs
+                instances[name].save()
+        except:
+            print('errorrrrrrrrrrrrrr')
+            raise OperationError
+
+
+
+        try:
             input(timestamp=dt.datetime.utcnow(), items=instances).save()
         except OperationError:
             raise OperationError

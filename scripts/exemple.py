@@ -12,7 +12,7 @@ data_list = [
                 {
                     'className': 'Camera',
                     'name': 'camera2',
-                    'data': {'image': 'IMAGE3'}
+                    'data': {'image': '/home/vkhg7500/Images/opencv_frame_0.png'}
                 }
             ]
 
@@ -69,7 +69,8 @@ input.add_item('Robot', 'turtlebot', **data)
 
 data = {
     'data': {'position': [8,5,6]},
-    'params': {'id': 20.0}
+    'params': {'id': 20.0},
+    'references': {'camera': ['+camera2', '-camera1']}
 }
 input.add_item('Robot', 'geko', **data)
 
@@ -77,6 +78,11 @@ data = {
     'data': {'image': 'IMAGE2'},
 }
 input.add_item('Camera', 'camera1', **data)
+
+data = {
+    'data': {'image': 'IMAGE10'},
+}
+input.add_item('Camera', 'camera2', **data)
 
 data = {
     'data': {'temperature': 20.5},
