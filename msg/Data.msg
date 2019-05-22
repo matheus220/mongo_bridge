@@ -1,3 +1,0 @@
-string dataModule
-string dataClass
-string jsonData
