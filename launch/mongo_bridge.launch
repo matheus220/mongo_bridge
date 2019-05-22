@@ -1,0 +1,5 @@
+<?xml version="1.0" ?>
+<launch>
+    <env name="MONGO_CLASS_PATH" value="(find mongo_bridge)/scripts"/>
+    <node pkg="mongo_bridge" type="bridge.py" name="mongo_bridge" output="screen"/>
+</launch>
