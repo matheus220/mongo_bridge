@@ -1,6 +1,10 @@
 from input import *
 
-input = InputMongoDB('robotic')
+input = SaveMongoDB('robotic')
+
+photo = open('/home/vkhg7500/Images/opencv_frame_0.png', 'rb')
+audio = open('/home/vkhg7500/Images/opencv_frame_0.png', 'rb')
+
 
 data_list = [
                 {
@@ -12,7 +16,7 @@ data_list = [
                 {
                     'className': 'Camera',
                     'name': 'camera2',
-                    'data': {'image': '/home/vkhg7500/Images/opencv_frame_0.png'}
+                    'data': {'#image': photo}
                 }
             ]
 
@@ -34,7 +38,7 @@ data = {
 input.add_item('Robot', 'geko', **data)
 
 data = {
-    'data': {'position': [2, 2, 1]},
+    'data': {'position': [2, 2, 1], '#audio': audio},
     'params': {'dim': [5, 1]},
     'references': {'camera': '+camera1'}
 }
@@ -95,3 +99,7 @@ try:
     print("SUCCESS!")
 except:
     print("ERROR!")
+
+photo.close()
+audio.close()
+

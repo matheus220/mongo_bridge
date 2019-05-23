@@ -4,6 +4,7 @@
 import datetime as dt
 from schema import Schema, Regex, And, Or, SchemaError
 from mongoengine import *
+from bson.dbref import DBRef
 
 
 class item(Document):
@@ -16,9 +17,10 @@ class item(Document):
 class input(Document):
     timestamp = DateTimeField(required=True)
     items = DictField()
+    image = FileField()
 
 
-class InputMongoDB:
+class SaveMongoDB:
     def __init__(self, db, host="localhost", port=27017):
         connect(db, host=host, port=port)
         self._items = {}
@@ -109,12 +111,11 @@ class InputMongoDB:
                 if 'data' in item_.keys():
                     kwargs['data'] = item_['data']
                     for key in kwargs['data'].keys():
-                        if key[0] == '#' and isinstance(kwargs['data'][key], str):
-                            succeeded, server_path = self.save_file(item_['name'], kwargs['data'][key])
-                            if succeeded:
-                                kwargs['data'][key] = server_path
-                            else:
-                                raise Exception('Error in save file')
+                        if key[0] == '#':
+                            file = GridFSProxy()
+                            file.put(kwargs['data'][key])
+                            file.close()
+                            kwargs['data'][key] = DBRef(file.collection_name + '.files', file.grid_id)
                 if 'references' in item_.keys():
                     kwargs['references'] = item_['references']
                 if 'params' in item_.keys():
@@ -147,22 +148,22 @@ class InputMongoDB:
                                 item.objects(name=ref[1:]).update(
                                     **{("unset__references__%s" % item_['name']): item.objects(name=item_['name']).first()})
 
-            except Exception:
+            except Exception as e:
+                del self._item_added_successfully[:]
+                self._items.clear()
+                print(e)
                 raise Exception
 
         try:
+            # Add log_refs to instances
             for name in instances.keys():
                 dict_refs = item.objects(name=name).first().references
-                instances[name].current_refs = dict_refs
+                instances[name].log_refs = dict_refs
                 instances[name].save()
-        except:
-            print('errorrrrrrrrrrrrrr')
-            raise OperationError
 
-
-
-        try:
+            # Save input
             input(timestamp=dt.datetime.utcnow(), items=instances).save()
+
         except OperationError:
             raise OperationError
         finally:
@@ -170,6 +171,7 @@ class InputMongoDB:
             self._items.clear()
 
         return True
+
     def save_file(self, item_name, local_path):
         SERVER_FOLDER_PATH = '/'
         print(local_path)
